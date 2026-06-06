@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import {
   fetchCommentsService,
   createCommentService,
@@ -14,37 +13,8 @@ export default function useComments() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    fetchInitialComments()
-
-    const channel = supabase
-      .channel('comments-live')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'comments',
-        },
-        async () => {
-          const data = await fetchCommentsService()
-          setComments(data)
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    fetchCommentsService().then(setComments).catch(console.log)
   }, [])
-
-  const fetchInitialComments = async () => {
-    try {
-      const data = await fetchCommentsService()
-      setComments(data)
-    } catch (err) {
-      console.log(err)
-    }
-  }
 
   const addComment = async ({
     name,
@@ -67,13 +37,7 @@ export default function useComments() {
         imageUrl = await uploadCommentImageService(image)
       }
 
-      const newComment = await createCommentService({
-        name,
-        comment,
-        imageUrl,
-      })
-
-      // instant UI update (tanpa nunggu realtime)
+      const newComment = await createCommentService({ name, comment, imageUrl })
       setComments((prev) => [newComment, ...prev])
     } catch (err) {
       console.log(err)
@@ -82,27 +46,16 @@ export default function useComments() {
     }
   }
 
-  const likeComment = async (
-    id: number,
-    currentLikes: number
-  ) => {
+  const likeComment = async (id: number, currentLikes: number) => {
     const liked = localStorage.getItem(`liked-${id}`)
-
     if (liked) return
 
     try {
-      const newLikes = await likeCommentService(
-        id,
-        currentLikes
-      )
-
+      const newLikes = await likeCommentService(id, currentLikes)
       localStorage.setItem(`liked-${id}`, 'true')
-
       setComments((prev) =>
         prev.map((item) =>
-          item.id === id
-            ? { ...item, likes: newLikes }
-            : item
+          item.id === id ? { ...item, likes: newLikes } : item
         )
       )
     } catch (err) {
@@ -110,10 +63,5 @@ export default function useComments() {
     }
   }
 
-  return {
-    comments,
-    loading,
-    addComment,
-    likeComment,
-  }
+  return { comments, loading, addComment, likeComment }
 }

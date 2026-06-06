@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '@/lib/supabase'
+import { fetchProjects } from '@/lib/portfolioService'
 import {
   ArrowLeft,
   ChevronLeft,
@@ -43,12 +43,8 @@ export default function PortfolioDetailPage() {
   }, [])
 
   const fetchProject = async () => {
-    const { data } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('id', id)
-      .single()
-
+    const projects = await fetchProjects()
+    const data = projects.find((p: any) => String(p.id) === String(id))
     if (data) {
       setProject(data)
     }

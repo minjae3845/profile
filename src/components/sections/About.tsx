@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, Variants } from "framer-motion";
 import { Code, Award, Globe, FileText, ArrowUpRight } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { fetchProjects, fetchCertificates } from "@/lib/portfolioService";
 
 /* ================== ANIMATION ================== */
 
@@ -76,16 +76,12 @@ export default function About() {
 
   const fetchStats = async () => {
     try {
-      const { count: projects } = await supabase
-        .from("projects")
-        .select("*", { count: "exact", head: true });
-
-      const { count: certificates } = await supabase
-        .from("certificates")
-        .select("*", { count: "exact", head: true });
-
-      setProjectCount(projects || 0);
-      setCertificateCount(certificates || 0);
+      const [projects, certificates] = await Promise.all([
+        fetchProjects(),
+        fetchCertificates(),
+      ]);
+      setProjectCount(projects.length);
+      setCertificateCount(certificates.length);
     } catch {
       setProjectCount(0);
       setCertificateCount(0);
